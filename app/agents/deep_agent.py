@@ -1,5 +1,6 @@
 from app.graph.state import DeepAgentState
 from app.memory.store import MemoryStore
+from app.services.guardrails import add_guardrail_note, validate_grounding
 from app.tools.analysis_tools import assess_risks, decompose_task
 from app.tools.knowledge_tools import search_knowledge
 
@@ -42,6 +43,10 @@ class DeepAgent:
         return state
 
     def synthesize(self, state: DeepAgentState) -> DeepAgentState:
+        is_grounded, fallback = validate_grounding(state["task"], state.get("citations", []))
+        if not is_grounded:
+            state["answer"] = add_guardrail_note(fallback)
+            return state
         plan_lines = "\n".join(f"- {step}" for step in state.get("plan", []))
         observation_lines = []
         for item in state.get("observations", []):
@@ -51,7 +56,7 @@ class DeepAgent:
             elif "findings" in item:
                 observation_lines.append(f"- {source}: {item['findings']}")
         observations = "\n".join(observation_lines) or "- No external tool evidence needed."
-        state["answer"] = (
+        state["answer"] = add_guardrail_note(
             "DeepAgent response\n\n"
             "Plan:\n"
             f"{plan_lines}\n\n"
@@ -70,4 +75,3 @@ class DeepAgent:
         self.memory_store.save_user_memory(user_id, profile)
         self.memory_store.save_task_result(user_id, state["task"], state["answer"])
         return state
-

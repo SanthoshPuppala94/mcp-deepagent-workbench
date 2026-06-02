@@ -9,4 +9,5 @@ def test_deep_agent_graph_runs_end_to_end(tmp_path):
     assert "search_knowledge" in result["selected_tools"]
     assert "assess_risks" in result["selected_tools"]
     assert result["citations"]
+    assert "Guardrail note" in result["answer"]
 

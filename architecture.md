@@ -25,6 +25,17 @@ memory, and testable execution phases.
 5. Synthesize a final answer with citations.
 6. Persist useful memory and task result.
 
+## Guardrails and Hallucination Controls
+
+Grounding-sensitive tasks require citations from local knowledge resources or
+tool observations. If citations are missing, the synthesis step returns an
+evidence-limited fallback rather than unsupported detail.
+
+Final answers include a guardrail note about validating tool outputs, enforcing
+policy checks, and requiring human approval for risky actions. This makes the
+project demonstrate not only agent orchestration, but also responsible GenAI
+delivery patterns.
+
 ## Production Considerations
 
 - Keep MCP tools narrow and auditable.
@@ -33,4 +44,3 @@ memory, and testable execution phases.
 - Add approval gates before destructive or external actions.
 - Test graph nodes independently and end to end.
 - Separate API, MCP, tools, graph, and memory boundaries.
-

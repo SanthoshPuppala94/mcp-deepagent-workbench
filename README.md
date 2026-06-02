@@ -12,6 +12,7 @@ agent workflows, memory, LangChain tool adapters, and LangGraph orchestration.
 - Tool selection, task decomposition, knowledge search, risk assessment
 - FastAPI endpoint for running the agent
 - pytest coverage for routing, memory, MCP registration, and graph execution
+- Guardrails for grounded responses, tool evidence, risk notes, and hallucination control
 
 ## Architecture
 
@@ -76,10 +77,19 @@ Decorated MCP resources:
 pytest
 ```
 
+## Guardrails and Hallucination Controls
+
+- Grounded tasks such as MCP, memory, LangGraph, LangChain, agent, tool, security, and risk questions require citations from local tools/resources.
+- If a grounded task has no citations, the agent returns an evidence-limited fallback instead of inventing details.
+- Final answers include a guardrail note reminding users to validate tool outputs and require approval for risky production actions.
+- MCP tools are narrow and decorated with explicit schemas through FastMCP.
+- Memory writes are explicit and stored in SQLite rather than hidden inside prompt text.
+
 ## Interview Positioning
 
 Say this project shows how to build a production-style tool-using deep agent:
 MCP exposes governed tools/resources, LangGraph controls the agent lifecycle,
 LangChain adapters make tools reusable in standard agent stacks, and SQLite
 memory demonstrates persistent personalization without hiding state in prompts.
-
+It also demonstrates hallucination controls through citation checks, evidence-limited
+fallbacks, and explicit guardrail notes.
