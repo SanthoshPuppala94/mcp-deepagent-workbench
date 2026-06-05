@@ -1,95 +1,175 @@
-# MCP DeepAgent Workbench
+# 🤖 MCP DeepAgent Workbench
 
-Production-style GenAI portfolio project focused on MCP servers, tools, deep
-agent workflows, memory, LangChain tool adapters, and LangGraph orchestration.
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![LangGraph](https://img.shields.io/badge/LangGraph-FF6B35?style=flat)](https://langchain-ai.github.io/langgraph/)
+[![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=flat&logo=langchain&logoColor=white)](https://langchain.com)
+[![MCP](https://img.shields.io/badge/FastMCP-8B5CF6?style=flat)](https://github.com/jlowin/fastmcp)
+[![pytest](https://img.shields.io/badge/Tested_with-pytest-0A9EDC?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
 
-## What It Demonstrates
+> **Production-style deep-agent framework** — Demonstrates MCP tool governance, LangGraph state machine orchestration, LangChain tool adapters, and persistent SQLite memory with hallucination controls and evidence-limited fallbacks.
 
-- FastMCP server with decorated tools and resources
-- LangGraph deep-agent workflow with explicit state transitions
-- LangChain-compatible `StructuredTool` adapters
-- Short-term graph state and long-term SQLite memory
-- Tool selection, task decomposition, knowledge search, risk assessment
-- FastAPI endpoint for running the agent
-- pytest coverage for routing, memory, MCP registration, and graph execution
-- Guardrails for grounded responses, tool evidence, risk notes, and hallucination control
+---
+
+## What It Does
+
+This workbench implements a **LangGraph deep-agent** that executes complex tasks through explicit, auditable state transitions. Tools are governed via a **FastMCP server** with typed schemas. Long-term memory persists in SQLite — no state hidden in prompts.
+
+---
 
 ## Architecture
 
-```text
-FastAPI / MCP Client
-        ↓
+```
+POST /run
+    │
+    ▼
 LangGraph DeepAgent
-        ↓
-Plan → Select Tools → Execute Tools → Synthesize → Save Memory
-        ↓
-Tools: search knowledge, decompose task, assess risks
-        ↓
-SQLite long-term memory + local knowledge resources
+    │
+    ├── [Plan]           → Decompose the task into steps
+    ├── [Select Tools]   → Choose relevant MCP tools
+    ├── [Execute Tools]  → Run tools with evidence collection
+    ├── [Synthesize]     → Build grounded, cited response
+    └── [Save Memory]    → Persist to SQLite long-term store
+    │
+    ▼
+FastMCP Server (stdio)
+    ├── Tools:     search_agent_knowledge
+    │              decompose_agent_task
+    │              assess_agent_risks
+    │              run_deep_agent
+    └── Resources: knowledge://mcp-design
+                   knowledge://deep-agent-patterns
+                   knowledge://memory-design
+    │
+    ▼
+LangChain StructuredTool adapters
+(tools reusable in any LangChain agent stack)
 ```
 
-## Setup
+---
 
-```powershell
+## Key Design Decisions
+
+- **Explicit state transitions** — Every agent step is a named LangGraph node with defined inputs/outputs; no hidden chain-of-thought magic
+- **LangChain adapters** — MCP tools are wrapped as `StructuredTool` so they work in any LangChain agent without rewriting
+- **FastMCP governance** — Tools and resources declared with typed schemas; compatible clients can discover and enumerate capabilities
+- **SQLite memory** — Long-term preferences and task history stored explicitly in a database, not embedded in prompt context
+- **Hallucination controls** — Grounded tasks require tool citations; if evidence is absent, the agent returns a fallback rather than inventing details
+- **Risk guardrails** — Final responses include an explicit guardrail note for production-impacting actions
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Python 3.11+
+
+### Setup
+
+```bash
+git clone https://github.com/SanthoshPuppala94/mcp-deepagent-workbench
+cd mcp-deepagent-workbench
+
 python -m venv .venv
+
+# Windows
 .\.venv\Scripts\Activate.ps1
+# macOS / Linux
+source .venv/bin/activate
+
 pip install -r requirements.txt
-Copy-Item .env.example .env
+cp .env.example .env
 ```
 
-## Run API
+### Run the API
 
-```powershell
+```bash
 uvicorn app.main:app --reload --port 8020
 ```
 
-Example:
+### Run the MCP Server
 
-```powershell
+```bash
+python -m app.mcp_server
+```
+
+### Run Tests
+
+```bash
+pytest
+```
+
+---
+
+## Example Usage
+
+```bash
+# Design a production agent
 Invoke-RestMethod -Method Post `
   -Uri http://127.0.0.1:8020/run `
   -ContentType "application/json" `
   -Body '{"task":"Design a production MCP deep agent with memory and SQL safety"}'
+
+# Assess risks
+Invoke-RestMethod -Method Post `
+  -Uri http://127.0.0.1:8020/run `
+  -ContentType "application/json" `
+  -Body '{"task":"Assess risks of deploying a tool-using agent in a regulated environment"}'
 ```
 
-## Run MCP Server
+### API Contract
 
-```powershell
-python -m app.mcp_server
+**Request**
+```json
+{ "task": "Design a production MCP deep agent with memory and SQL safety" }
 ```
 
-Decorated MCP tools:
-
-- `search_agent_knowledge`
-- `decompose_agent_task`
-- `assess_agent_risks`
-- `run_deep_agent`
-
-Decorated MCP resources:
-
-- `knowledge://mcp-design`
-- `knowledge://deep-agent-patterns`
-- `knowledge://memory-design`
-
-## Run Tests
-
-```powershell
-pytest
+**Response**
+```json
+{
+  "result": "Based on knowledge://mcp-design and knowledge://memory-design...",
+  "steps_taken": ["plan", "select_tools", "execute_tools", "synthesize"],
+  "citations": ["knowledge://mcp-design", "knowledge://memory-design"],
+  "guardrail_note": "Validate tool outputs before applying to production systems."
+}
 ```
 
-## Guardrails and Hallucination Controls
+---
 
-- Grounded tasks such as MCP, memory, LangGraph, LangChain, agent, tool, security, and risk questions require citations from local tools/resources.
-- If a grounded task has no citations, the agent returns an evidence-limited fallback instead of inventing details.
-- Final answers include a guardrail note reminding users to validate tool outputs and require approval for risky production actions.
-- MCP tools are narrow and decorated with explicit schemas through FastMCP.
-- Memory writes are explicit and stored in SQLite rather than hidden inside prompt text.
+## Project Structure
 
-## Interview Positioning
+```
+mcp-deepagent-workbench/
+├── app/
+│   ├── main.py           # FastAPI app + /run endpoint
+│   ├── agent.py          # LangGraph deep-agent graph definition
+│   ├── mcp_server.py     # FastMCP tools and resources
+│   ├── adapters.py       # LangChain StructuredTool wrappers
+│   └── memory.py         # SQLite long-term memory
+├── data/
+│   └── knowledge/        # Local knowledge resources
+├── tests/                # pytest suite (routing, memory, MCP, graph)
+├── architecture.md       # Full architecture walkthrough
+├── pyproject.toml
+├── .env.example
+└── requirements.txt
+```
 
-Say this project shows how to build a production-style tool-using deep agent:
-MCP exposes governed tools/resources, LangGraph controls the agent lifecycle,
-LangChain adapters make tools reusable in standard agent stacks, and SQLite
-memory demonstrates persistent personalization without hiding state in prompts.
-It also demonstrates hallucination controls through citation checks, evidence-limited
-fallbacks, and explicit guardrail notes.
+---
+
+## Guardrails Summary
+
+| Guardrail | Implementation |
+|-----------|---------------|
+| Evidence requirement | Grounded tasks must cite local tools/resources |
+| Evidence fallback | Returns explicit fallback if no citations found |
+| Production safety | Guardrail note included for risky actions |
+| Schema governance | MCP tools declared with typed FastMCP schemas |
+| Memory hygiene | All state written to SQLite, not hidden in prompt |
+| Secret hygiene | Credentials via `.env`, never hardcoded |
+
+---
+
+## About
+
+Portfolio project demonstrating production deep-agent patterns: MCP tool governance, LangGraph lifecycle management, LangChain adapter reusability, and SQLite-backed persistent memory — with hallucination controls at every layer.
